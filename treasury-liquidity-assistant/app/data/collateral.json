@@ -1,0 +1,41 @@
+[
+  {
+    "scenario": "healthy",
+    "source_system": "RiskALM",
+    "source_record_id": "COL-001",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:00:00Z",
+    "asset_type": "GOVT_BOND",
+    "market_value": 600000.00,
+    "haircut_percentage": 5.00,
+    "adjusted_value": 570000.00,
+    "liquidity_category": "HQLA",
+    "data_status": "VALID"
+  },
+  {
+    "scenario": "healthy",
+    "source_system": "RiskALM",
+    "source_record_id": "COL-002",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:10:00Z",
+    "asset_type": "T_BILL",
+    "market_value": 200000.00,
+    "haircut_percentage": 10.00,
+    "adjusted_value": 180000.00,
+    "liquidity_category": "HQLA",
+    "data_status": "VALID"
+  },
+  {
+    "scenario": "healthy",
+    "source_system": "RiskALM",
+    "source_record_id": "COL-003",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:20:00Z",
+    "asset_type": "CASH",
+    "market_value": 150000.00,
+    "haircut_percentage": 0.00,
+    "adjusted_value": 150000.00,
+    "liquidity_category": "HQLA",
+    "data_status": "VALID"
+  }
+]

@@ -1,0 +1,44 @@
+[
+  {
+    "scenario": "healthy",
+    "source_system": "PaymentsSystem",
+    "source_record_id": "CF-001",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:00:00Z",
+    "currency": "GBP",
+    "flow_type": "INFLOW",
+    "counterparty_reference": "CP-INV-1001",
+    "amount": 350000.00,
+    "amount_in_base_currency": 350000.00,
+    "maturity_bucket": "T+1",
+    "data_status": "VALID"
+  },
+  {
+    "scenario": "healthy",
+    "source_system": "PaymentsSystem",
+    "source_record_id": "CF-002",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:02:00Z",
+    "currency": "GBP",
+    "flow_type": "OUTFLOW",
+    "counterparty_reference": "CP-OUT-2002",
+    "amount": -250000.00,
+    "amount_in_base_currency": -250000.00,
+    "maturity_bucket": "T+1",
+    "data_status": "VALID"
+  },
+  {
+    "scenario": "healthy",
+    "source_system": "PaymentsSystem",
+    "source_record_id": "CF-003",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:30:00Z",
+    "currency": "GBP",
+    "flow_type": "INFLOW",
+    "counterparty_reference": "CP-INV-1003",
+    "amount": 120000.00,
+    "amount_in_base_currency": 120000.00,
+    "maturity_bucket": "T+2",
+    "data_status": "VALID"
+  }
+]

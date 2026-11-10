@@ -1,0 +1,17 @@
+groups:
+  - name: treasury-alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Treasury service is down
+      - alert: HighLiquidityAlert
+        expr: treasury_health_checks_total > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Health check count abnormal

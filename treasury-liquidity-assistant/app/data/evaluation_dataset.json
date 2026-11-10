@@ -1,0 +1,59 @@
+{
+  "healthy": {
+    "test_case_id": "healthy",
+    "description": "Healthy daily liquidity report scenario",
+    "source_fixture": "healthy",
+    "expected_metrics": {
+      "total_cash_position": 1700000.0,
+      "total_expected_inflows": 470000.0,
+      "total_expected_outflows": 250000.0,
+      "net_cash_flow": 220000.0,
+      "adjusted_hqla": 900000.0,
+      "simplified_net_cash_outflow": 250000.0,
+      "simplified_liquidity_coverage_ratio": 360.0
+    },
+    "critical_metrics": [
+      "simplified_liquidity_coverage_ratio"
+    ],
+    "allowed_absolute_tolerance": 0.01,
+    "allowed_percentage_tolerance": 2.0
+  },
+  "stale": {
+    "test_case_id": "stale",
+    "description": "Stale data scenario with a freshness issue",
+    "source_fixture": "stale",
+    "expected_metrics": {
+      "total_cash_position": 1700000.0,
+      "total_expected_inflows": 470000.0,
+      "total_expected_outflows": 250000.0,
+      "net_cash_flow": 220000.0,
+      "adjusted_hqla": 900000.0,
+      "simplified_net_cash_outflow": 250000.0,
+      "simplified_liquidity_coverage_ratio": 360.0
+    },
+    "critical_metrics": [
+      "simplified_liquidity_coverage_ratio"
+    ],
+    "allowed_absolute_tolerance": 0.01,
+    "allowed_percentage_tolerance": 2.0
+  },
+  "outlier": {
+    "test_case_id": "outlier",
+    "description": "Outlier scenario with deviating one-day movement",
+    "source_fixture": "outlier",
+    "expected_metrics": {
+      "total_cash_position": 1700000.0,
+      "total_expected_inflows": 470000.0,
+      "total_expected_outflows": 250000.0,
+      "net_cash_flow": 220000.0,
+      "adjusted_hqla": 900000.0,
+      "simplified_net_cash_outflow": 250000.0,
+      "simplified_liquidity_coverage_ratio": 360.0
+    },
+    "critical_metrics": [
+      "simplified_liquidity_coverage_ratio"
+    ],
+    "allowed_absolute_tolerance": 0.01,
+    "allowed_percentage_tolerance": 2.0
+  }
+}

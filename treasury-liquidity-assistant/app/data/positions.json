@@ -1,0 +1,41 @@
+[
+  {
+    "scenario": "healthy",
+    "source_system": "CoreBankingPositions",
+    "source_record_id": "POS-001",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:00:00Z",
+    "currency": "GBP",
+    "position_type": "OPERATING_BALANCE",
+    "account_reference": "TRES-GBP-001",
+    "balance": 1200000.00,
+    "amount_in_base_currency": 1200000.00,
+    "data_status": "VALID"
+  },
+  {
+    "scenario": "healthy",
+    "source_system": "CoreBankingPositions",
+    "source_record_id": "POS-002",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-06T09:05:00Z",
+    "currency": "GBP",
+    "position_type": "COLLATERAL",
+    "account_reference": "TRES-GBP-002",
+    "balance": 500000.00,
+    "amount_in_base_currency": 500000.00,
+    "data_status": "VALID"
+  },
+  {
+    "scenario": "healthy",
+    "source_system": "CoreBankingPositions",
+    "source_record_id": "POS-003",
+    "business_date": "2026-11-06",
+    "extraction_timestamp": "2026-11-05T09:00:00Z",
+    "currency": "GBP",
+    "position_type": "OPERATING_BALANCE",
+    "account_reference": "TRES-GBP-003",
+    "balance": 800000.00,
+    "amount_in_base_currency": 800000.00,
+    "data_status": "VALID"
+  }
+]
