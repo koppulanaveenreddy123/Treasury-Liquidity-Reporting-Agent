@@ -8,6 +8,44 @@ groups:
           severity: critical
         annotations:
           summary: Treasury service is down
+          description: The application endpoint is unavailable for scraping and must be investigated immediately.
+
+      - alert: TreasurySourceStale
+        expr: treasury_source_age_seconds > 1800
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Treasury source data is stale
+          description: One or more source systems have not refreshed within the acceptable freshness window.
+
+      - alert: PendingHumanReview
+        expr: treasury_pending_review_reports > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Draft report awaiting review
+          description: At least one treasury report is pending formal human approval before release.
+
+      - alert: LiquidityEvaluationBelowThreshold
+        expr: treasury_last_evaluation_score < 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Automated evaluation failed threshold check
+          description: The generated liquidity report appears anomalous and requires escalation for review.
+
+      - alert: LiquidityRatioAtRisk
+        expr: treasury_last_liquidity_ratio < 1.0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Liquidity ratio below required level
+          description: The latest liquidity ratio is below the safe operating threshold and should be treated as a reporting risk.
+
       - alert: HighLiquidityAlert
         expr: treasury_health_checks_total > 100
         for: 5m

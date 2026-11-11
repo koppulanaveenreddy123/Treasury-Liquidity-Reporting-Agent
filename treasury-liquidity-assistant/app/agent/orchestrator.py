@@ -46,8 +46,9 @@ from app.tools.positions_tool import PositionsTool
 class Orchestrator:
     """Coordinates retrieval, calculation, and narrative generation."""
 
-    def __init__(self, llm_provider: LLMProvider | None = None, use_mock_llm: bool = True) -> None:
-        self.llm_provider = llm_provider or (MockLLMProvider() if use_mock_llm else OpenAICompatibleLLMProvider())
+    def __init__(self, llm_provider: LLMProvider | None = None, use_mock_llm: bool | None = None) -> None:
+        effective_use_mock = settings.use_mock_llm if use_mock_llm is None else use_mock_llm
+        self.llm_provider = llm_provider or (MockLLMProvider() if effective_use_mock else OpenAICompatibleLLMProvider())
         self.positions_tool = PositionsTool()
         self.cashflows_tool = CashFlowsTool()
         self.collateral_tool = CollateralTool()
@@ -59,9 +60,11 @@ class Orchestrator:
         self.review_service = ReviewService()
         self.vector_store = VectorStore()
 
-    def _load_freshness_metadata(self, source_name: str, record_count: int, latest_ts: str | None, source_age_seconds: int, business_date: str | None = None) -> dict[str, Any]:
-        if business_date and latest_ts and latest_ts[:10] == business_date:
+    def _load_freshness_metadata(self, source_name: str, record_count: int, latest_ts: str | None, source_age_seconds: int, business_date: str | None = None, scenario: str | None = None) -> dict[str, Any]:
+        if business_date and latest_ts and latest_ts[:10] == business_date and scenario != "stale":
             source_age_seconds = 0
+        if scenario == "stale":
+            source_age_seconds = max(source_age_seconds, 3 * 60 * 60)
         status = self.freshness_service.get_freshness_status(source_age_seconds)
         is_stale = source_age_seconds > 1800
         SOURCE_AGE.labels(source_system=source_name).set(source_age_seconds)
@@ -96,7 +99,7 @@ class Orchestrator:
             REPORT_REQUESTS.labels(status="success").inc()
 
             with tracer_span("treasury.positions.retrieve") as positions_span:
-                positions = self.positions_tool.get_position_data(business_date=business_date)
+                positions = self.positions_tool.get_position_data(business_date=business_date, scenario=scenario)
                 positions_span.set_attribute("source.system", "TreasuryPos")
                 positions_span.set_attribute("source.record_count", positions.get("record_count", 0))
                 positions_span.set_attribute("source.age_seconds", positions.get("data_age_seconds", 0))
@@ -104,7 +107,7 @@ class Orchestrator:
                 TOOL_DURATION.labels(tool="positions").observe(float(positions.get("execution_time_ms", 0)) / 1000.0)
 
             with tracer_span("treasury.cashflows.retrieve") as cashflow_span:
-                cashflows = self.cashflows_tool.get_cashflow_data(business_date=business_date)
+                cashflows = self.cashflows_tool.get_cashflow_data(business_date=business_date, scenario=scenario)
                 cashflow_span.set_attribute("source.system", "CashFlowEngine")
                 cashflow_span.set_attribute("source.record_count", cashflows.get("record_count", 0))
                 cashflow_span.set_attribute("source.age_seconds", cashflows.get("data_age_seconds", 0))
@@ -112,7 +115,7 @@ class Orchestrator:
                 TOOL_DURATION.labels(tool="cashflows").observe(float(cashflows.get("execution_time_ms", 0)) / 1000.0)
 
             with tracer_span("treasury.collateral.retrieve") as collateral_span:
-                collateral = self.collateral_tool.get_collateral_data(business_date=business_date)
+                collateral = self.collateral_tool.get_collateral_data(business_date=business_date, scenario=scenario)
                 collateral_span.set_attribute("source.system", "CollateralHub")
                 collateral_span.set_attribute("source.record_count", collateral.get("record_count", 0))
                 collateral_span.set_attribute("source.age_seconds", collateral.get("data_age_seconds", 0))
@@ -120,9 +123,9 @@ class Orchestrator:
                 TOOL_DURATION.labels(tool="collateral").observe(float(collateral.get("execution_time_ms", 0)) / 1000.0)
 
             freshness = {
-                "positions": self._load_freshness_metadata("TreasuryPos", positions.get("record_count", 0), positions.get("latest_extraction_timestamp"), positions.get("data_age_seconds", 0), business_date),
-                "cashflows": self._load_freshness_metadata("CashFlowEngine", cashflows.get("record_count", 0), cashflows.get("latest_extraction_timestamp"), cashflows.get("data_age_seconds", 0), business_date),
-                "collateral": self._load_freshness_metadata("CollateralHub", collateral.get("record_count", 0), collateral.get("latest_extraction_timestamp"), collateral.get("data_age_seconds", 0), business_date),
+                "positions": self._load_freshness_metadata("TreasuryPos", positions.get("record_count", 0), positions.get("latest_extraction_timestamp"), positions.get("data_age_seconds", 0), business_date, scenario),
+                "cashflows": self._load_freshness_metadata("CashFlowEngine", cashflows.get("record_count", 0), cashflows.get("latest_extraction_timestamp"), cashflows.get("data_age_seconds", 0), business_date, scenario),
+                "collateral": self._load_freshness_metadata("CollateralHub", collateral.get("record_count", 0), collateral.get("latest_extraction_timestamp"), collateral.get("data_age_seconds", 0), business_date, scenario),
             }
 
             with tracer_span("treasury.source_freshness.validate") as freshness_span:

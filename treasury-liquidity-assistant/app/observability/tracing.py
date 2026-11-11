@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from contextlib import contextmanager
 
 from opentelemetry import trace
@@ -19,9 +20,12 @@ def setup_tracing(service_name: str, app=None) -> None:
     if _tracing_initialized:
         return
 
+    jaeger_endpoint = os.getenv("JAEGER_ENDPOINT", "http://localhost:4318").rstrip("/")
+    traces_url = f"{jaeger_endpoint}/v1/traces"
+
     resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
-    exporter = OTLPSpanExporter(endpoint="http://localhost:4318/v1/traces")
+    exporter = OTLPSpanExporter(endpoint=traces_url)
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
     if app is not None:

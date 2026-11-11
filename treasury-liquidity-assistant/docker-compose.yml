@@ -11,6 +11,7 @@ services:
       - DEBUG=true
       - HOST=0.0.0.0
       - PORT=8000
+      - JAEGER_ENDPOINT=http://jaeger:4318
     depends_on:
       - jaeger
       - prometheus
@@ -39,3 +40,4 @@ services:
       - "3000:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards

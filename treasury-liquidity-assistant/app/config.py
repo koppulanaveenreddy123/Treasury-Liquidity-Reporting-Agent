@@ -16,7 +16,8 @@ class Settings:
         self.debug = os.getenv("DEBUG", "false").lower() == "true"
         self.host = os.getenv("HOST", "0.0.0.0")
         self.port = int(os.getenv("PORT", "8000"))
-        self.llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+        self.llm_model = os.getenv("OPENAI_MODEL", os.getenv("LLM_MODEL", "gpt-4o-mini"))
+        self.embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
         self.openai_base_url = os.getenv("OPENAI_BASE_URL", "")
         self.chroma_host = os.getenv("CHROMA_HOST", "localhost")
@@ -26,7 +27,12 @@ class Settings:
         self.project_root = Path(__file__).resolve().parent.parent
         self.data_dir = Path(os.getenv("DATA_DIR", str(self.project_root / "app" / "data")))
         self.knowledge_dir = Path(os.getenv("KNOWLEDGE_DIR", str(self.project_root / "app" / "knowledge")))
-        self.use_mock_llm = os.getenv("USE_MOCK_LLM", "true").lower() == "true"
+
+        raw_use_mock = os.getenv("USE_MOCK_LLM")
+        if raw_use_mock is not None:
+            self.use_mock_llm = raw_use_mock.lower() == "true"
+        else:
+            self.use_mock_llm = not bool(self.openai_api_key)
 
 
 settings = Settings()

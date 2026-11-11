@@ -49,7 +49,7 @@ class VectorStore:
         self.client = chromadb.Client()
         self.collection = self.client.get_or_create_collection(name=collection_name)
 
-    def ingest_documents(self, documents: list[dict[str, str]]) -> None:
+    def add_documents(self, documents: list[dict[str, str]], embeddings: list[list[float]] | None = None) -> None:
         if not documents:
             return
         ids: list[str] = []
@@ -65,7 +65,14 @@ class VectorStore:
                 "document_version": doc.get("document_version", "v1"),
                 "source_type": doc.get("source_type", "synthetic_guidance"),
             })
-        self.collection.add(ids=ids, documents=texts, metadatas=metadatas)
+
+        payload: dict[str, Any] = {"ids": ids, "documents": texts, "metadatas": metadatas}
+        if embeddings is not None:
+            payload["embeddings"] = embeddings
+        self.collection.add(**payload)
+
+    def ingest_documents(self, documents: list[dict[str, str]]) -> None:
+        self.add_documents(documents)
 
     def query(self, query_text: str, limit: int = 3) -> list[str]:
         results = self.collection.query(query_texts=[query_text], n_results=limit)
