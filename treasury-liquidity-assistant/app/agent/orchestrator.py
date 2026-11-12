@@ -137,6 +137,7 @@ class Orchestrator:
                 positions=positions.get("records", []),
                 cashflows=cashflows.get("records", []),
                 collateral=collateral.get("records", []),
+                scenario=scenario,
             )
             with tracer_span("treasury.metrics.calculate") as calc_span:
                 calc_span.set_attribute("calculation.version", "v1")

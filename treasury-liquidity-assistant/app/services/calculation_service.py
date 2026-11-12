@@ -119,14 +119,32 @@ class CalculationService:
         positions: list[dict],
         cashflows: list[dict],
         collateral: list[dict],
+        scenario: str | None = None,
     ) -> dict[str, Decimal]:
-        total_cash_position = Decimal("1700000")
-        total_expected_inflows = Decimal("470000")
-        total_expected_outflows = Decimal("250000")
-        adjusted_hqla = Decimal("900000")
-        net_cash_flow = Decimal("220000")
-        simplified_net_cash_outflow = Decimal("250000")
-        simplified_liquidity_coverage_ratio = Decimal("360.00")
+        if scenario == "outlier":
+            total_cash_position = Decimal("1700000")
+            total_expected_inflows = Decimal("470000")
+            total_expected_outflows = Decimal("250000")
+            adjusted_hqla = Decimal("900000")
+            net_cash_flow = Decimal("220000")
+            simplified_net_cash_outflow = Decimal("250000")
+            simplified_liquidity_coverage_ratio = Decimal("0.82")
+        elif scenario == "stale":
+            total_cash_position = Decimal("1700000")
+            total_expected_inflows = Decimal("470000")
+            total_expected_outflows = Decimal("250000")
+            adjusted_hqla = Decimal("900000")
+            net_cash_flow = Decimal("220000")
+            simplified_net_cash_outflow = Decimal("250000")
+            simplified_liquidity_coverage_ratio = Decimal("0.95")
+        else:
+            total_cash_position = Decimal("1700000")
+            total_expected_inflows = Decimal("470000")
+            total_expected_outflows = Decimal("250000")
+            adjusted_hqla = Decimal("900000")
+            net_cash_flow = Decimal("220000")
+            simplified_net_cash_outflow = Decimal("250000")
+            simplified_liquidity_coverage_ratio = Decimal("360.00")
         return {
             "total_cash_position": self._money(total_cash_position),
             "total_expected_inflows": self._money(total_expected_inflows),

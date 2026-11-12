@@ -32,16 +32,37 @@ class AnomalyService:
     def detect_anomalies_for_report(
         self, metrics: dict[str, float], freshness: dict[str, dict], business_date: str
     ) -> list[dict[str, object]]:
-        return [
-            {
-                "detected": True,
-                "anomaly_type": "STALE_SOURCE",
-                "metric_name": "source_freshness",
-                "source_system": next(iter(freshness), "Unknown"),
-                "current_value": 0,
-                "expected_range": "0-1800 seconds",
-                "severity": "CRITICAL",
-                "reason": "Source is stale and should be reviewed before approval.",
-                "detected_at": "now",
-            }
-        ] if any(meta.get("is_stale") for meta in freshness.values()) else []
+        anomalies: list[dict[str, object]] = []
+
+        if any(meta.get("is_stale") for meta in freshness.values()):
+            anomalies.append(
+                {
+                    "detected": True,
+                    "anomaly_type": "STALE_SOURCE",
+                    "metric_name": "source_freshness",
+                    "source_system": next(iter(freshness), "Unknown"),
+                    "current_value": 0,
+                    "expected_range": "0-1800 seconds",
+                    "severity": "CRITICAL",
+                    "reason": "Source is stale and should be reviewed before approval.",
+                    "detected_at": "now",
+                }
+            )
+
+        liquidity_ratio = metrics.get("simplified_liquidity_coverage_ratio", 0)
+        if float(liquidity_ratio) < 1.0:
+            anomalies.append(
+                {
+                    "detected": True,
+                    "anomaly_type": "OUTLIER_METRIC",
+                    "metric_name": "simplified_liquidity_coverage_ratio",
+                    "source_system": "TreasuryCalculation",
+                    "current_value": float(liquidity_ratio),
+                    "expected_range": "1.0 or above",
+                    "severity": "CRITICAL",
+                    "reason": "Liquidity ratio is materially below the expected operating range and should be investigated before approval.",
+                    "detected_at": "now",
+                }
+            )
+
+        return anomalies

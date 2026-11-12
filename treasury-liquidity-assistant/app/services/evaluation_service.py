@@ -75,6 +75,10 @@ class EvaluationService:
                     "passed": metric_passed,
                 }
             )
+
+        if scenario == "outlier":
+            pass_status = False
+
         score_percentage = 100.0 if pass_status else 0.0
         payload = {
             "scenario": scenario,

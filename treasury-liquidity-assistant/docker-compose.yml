@@ -40,4 +40,4 @@ services:
       - "3000:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning/dashboards:/var/lib/grafana/dashboards
