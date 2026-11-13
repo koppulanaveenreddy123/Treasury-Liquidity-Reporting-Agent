@@ -20,11 +20,13 @@ class Settings:
         self.embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
         self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
         self.openai_base_url = os.getenv("OPENAI_BASE_URL", "")
+        self.project_root = Path(__file__).resolve().parent.parent
         self.chroma_host = os.getenv("CHROMA_HOST", "localhost")
         self.chroma_port = int(os.getenv("CHROMA_PORT", "8001"))
+        raw_chroma_path = Path(os.getenv("CHROMA_PATH", str(self.project_root / ".chromadb")))
+        self.chroma_path = raw_chroma_path if raw_chroma_path.is_absolute() else self.project_root / raw_chroma_path
         self.jaeger_endpoint = os.getenv("JAEGER_ENDPOINT", "http://localhost:4318")
         self.prometheus_port = int(os.getenv("PROMETHEUS_PORT", "9090"))
-        self.project_root = Path(__file__).resolve().parent.parent
         self.data_dir = Path(os.getenv("DATA_DIR", str(self.project_root / "app" / "data")))
         self.knowledge_dir = Path(os.getenv("KNOWLEDGE_DIR", str(self.project_root / "app" / "knowledge")))
 

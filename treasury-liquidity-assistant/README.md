@@ -79,7 +79,10 @@ JAEGER_ENDPOINT=http://localhost:4318
 PROMETHEUS_PORT=9090
 CHROMA_HOST=localhost
 CHROMA_PORT=8001
+CHROMA_PATH=.chromadb
 ```
+
+ChromaDB persists its collection in `.chromadb/` by default. The application ingests the local Treasury guidance on startup when the collection is empty; override `CHROMA_PATH` to use another directory.
 
 ### 3) Rebuild the vector store with the same embedding model
 

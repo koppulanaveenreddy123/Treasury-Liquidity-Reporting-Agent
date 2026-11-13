@@ -4,6 +4,8 @@ from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 HEALTH_CHECKS = Counter("treasury_health_checks_total", "Number of health checks performed")
 REPORT_REQUESTS = Counter("treasury_report_requests_total", "Number of report generation requests", labelnames=("status",))
+REPORTS_PROCESSED = Counter("treasury_reports_processed_total", "Number of reports processed")
+BLOCKED_REPORTS = Counter("treasury_blocked_reports_total", "Number of reports blocked from release")
 TOOL_CALLS = Counter("treasury_tool_calls_total", "Number of data retrieval calls", labelnames=("tool", "status"))
 LLM_CALLS = Counter("treasury_llm_calls_total", "Number of LLM calls", labelnames=("provider", "model", "status"))
 RAG_RETRIEVALS = Counter("treasury_rag_retrieval_total", "Number of RAG retrievals", labelnames=("status",))

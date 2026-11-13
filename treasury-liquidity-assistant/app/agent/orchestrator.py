@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -20,9 +21,7 @@ from app.observability.metrics import (
     LAST_LIQUIDITY_RATIO,
     LLM_CALLS,
     LLM_DURATION,
-    PENDING_REVIEW_REPORTS,
     REPORT_DURATION,
-    REPORT_REQUESTS,
     RAG_RETRIEVALS,
     RAG_RETRIEVAL_DURATION,
     SOURCE_AGE,
@@ -41,6 +40,8 @@ from app.services.review_service import ReviewService
 from app.tools.cashflows_tool import CashFlowsTool
 from app.tools.collateral_tool import CollateralTool
 from app.tools.positions_tool import PositionsTool
+
+logger = logging.getLogger("treasury_app")
 
 
 class Orchestrator:
@@ -82,11 +83,36 @@ class Orchestrator:
     def _get_guidance(self, query: str) -> tuple[list[str], dict[str, Any]]:
         try:
             documents = self.vector_store.query(query_text=query, limit=5)
-            RAG_RETRIEVALS.labels(status="success").inc()
-            return documents, {"status": "success", "count": len(documents)}
+            status = "success" if documents else "empty"
+            RAG_RETRIEVALS.labels(status=status).inc()
+            if not documents:
+                raise RuntimeError("ChromaDB returned no Treasury guidance for the report query.")
+            return documents, {
+                "status": status,
+                "count": len(documents),
+                "query": query,
+                "embedding_model": self.vector_store.embedding_model,
+            }
         except Exception:
             RAG_RETRIEVALS.labels(status="error").inc()
-            return [], {"status": "error", "count": 0}
+            logger.exception("ChromaDB guidance retrieval failed; refusing to generate an ungrounded report")
+            raise
+
+    @staticmethod
+    def _parse_narrative(output: str) -> tuple[str, list[str]]:
+        try:
+            result = json.loads(output)
+        except json.JSONDecodeError:
+            return output.strip(), []
+        if not isinstance(result, dict):
+            return output.strip(), []
+        summary = result.get("summary")
+        recommendations = result.get("recommendations", [])
+        if not isinstance(summary, str) or not summary.strip():
+            raise ValueError("LLM response JSON must include a non-empty summary.")
+        if not isinstance(recommendations, list) or not all(isinstance(item, str) for item in recommendations):
+            raise ValueError("LLM response JSON recommendations must be a list of strings.")
+        return summary.strip(), [item.strip() for item in recommendations if item.strip()]
 
     def generate_report(self, business_date: str, scenario: str = "healthy", question: str = "", human_review_status: str = "PENDING") -> dict[str, Any]:
         report_id = f"rep-{uuid.uuid4().hex[:8]}"
@@ -96,8 +122,6 @@ class Orchestrator:
         with tracer_span("treasury.report.generate") as span:
             span.set_attribute("report.id", report_id)
             span.set_attribute("business.date", business_date)
-            REPORT_REQUESTS.labels(status="success").inc()
-
             with tracer_span("treasury.positions.retrieve") as positions_span:
                 positions = self.positions_tool.get_position_data(business_date=business_date, scenario=scenario)
                 positions_span.set_attribute("source.system", "TreasuryPos")
@@ -178,13 +202,15 @@ class Orchestrator:
                 anomalies=anomalies,
                 evaluation=evaluation_result,
                 review_status=human_review_status,
+                question=question,
             )
             provider_name = "mock"
             if isinstance(self.llm_provider, MockLLMProvider):
-                narrative = self.llm_provider.generate(llm_prompt)
+                llm_output = self.llm_provider.generate(llm_prompt)
             else:
                 provider_name = "openai"
-                narrative = self.llm_provider.generate(llm_prompt)
+                llm_output = self.llm_provider.generate(llm_prompt)
+            narrative, recommendations = self._parse_narrative(llm_output)
             with tracer_span("treasury.llm.call") as llm_span:
                 llm_span.set_attribute("llm.provider", provider_name)
                 llm_span.set_attribute("llm.model", getattr(self.llm_provider, "model", "mock-model"))
@@ -197,8 +223,6 @@ class Orchestrator:
                 report_status = "BLOCKED"
             if evaluation_result["passed"] is False:
                 report_status = "BLOCKED"
-            if report_status == "DRAFT":
-                PENDING_REVIEW_REPORTS.inc()
             HUMAN_REVIEWS.labels(decision="PENDING").inc()
             LAST_LIQUIDITY_RATIO.set(float(metrics.get("simplified_liquidity_coverage_ratio", 0)))
             REPORT_DURATION.observe((datetime.now(timezone.utc) - start).total_seconds())
@@ -210,6 +234,10 @@ class Orchestrator:
                 "human_review_status": human_review_status,
                 "calculated_metrics": {name: str(value) for name, value in metrics.items()},
                 "narrative": narrative,
+                "recommendations": recommendations,
+                "rag_metadata": rag_meta,
+                "llm_provider": provider_name,
+                "llm_model": getattr(self.llm_provider, "model", "mock-model"),
                 "source_summary": [
                     {
                         "source_system": source_name,

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from app.rag.chunker import Chunker
 from app.rag.document_loader import DocumentLoader
-from app.rag.embedding_service import EmbeddingService
 from app.rag.vector_store import VectorStore
 
 
@@ -12,7 +11,6 @@ class IngestionService:
     def __init__(self, knowledge_dir: str | None = None) -> None:
         self.loader = DocumentLoader(knowledge_dir)
         self.chunker = Chunker()
-        self.embeddings = EmbeddingService()
         self.vector_store = VectorStore()
 
     def ingest(self) -> None:
@@ -22,5 +20,4 @@ class IngestionService:
         for doc in documents:
             for index, chunk in enumerate(self.chunker.chunk(doc["text"])):
                 chunks.append({"id": f"{doc['id']}-{index}", "text": chunk})
-        embeddings = [self.embeddings.embed(chunk["text"]) for chunk in chunks]
-        self.vector_store.add_documents(chunks, embeddings)
+        self.vector_store.add_documents(chunks)

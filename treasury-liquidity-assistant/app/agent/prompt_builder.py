@@ -11,7 +11,9 @@ Explicitly mention when human review is required.
 Never approve a report.
 Never describe the report as submitted to a regulator.
 Never describe the simplified calculation as an official regulatory LCR.
-Generate narrative only.
+Return valid JSON only, with a summary string and a recommendations array of strings.
+Ground the summary and each recommendation in the retrieved Treasury guidance and supplied report facts.
+Do not invent policies or make recommendations unsupported by the retrieved guidance.
 """
 
 
@@ -23,6 +25,7 @@ def build_prompt(
     anomalies: list[dict[str, object]] | None = None,
     evaluation: dict[str, object] | None = None,
     review_status: str = "PENDING",
+    question: str = "",
 ) -> str:
     guidance_text = "\n".join(f"- {item}" for item in guidance) if guidance else "- No Treasury guidance retrieved."
     metrics_text = "\n".join(f"{name}: {value}" for name, value in metrics.items())
@@ -32,7 +35,7 @@ def build_prompt(
     return (
         f"{SYSTEM_INSTRUCTION}\n\n"
         "USER QUESTION\n"
-        f"Prepare a short draft narrative for the {scenario} treasury liquidity report.\n\n"
+        f"{question or f'Prepare a short draft narrative for the {scenario} treasury liquidity report.'}\n\n"
         "DETERMINISTIC METRICS\n"
         f"{metrics_text}\n\n"
         "SOURCE FRESHNESS\n"
@@ -45,8 +48,11 @@ def build_prompt(
         f"{evaluation_text}\n\n"
         "HUMAN REVIEW STATUS\n"
         f"{review_status}\n\n"
-        "MANDATORY RESPONSE RULES\n"
-        "- Write a concise narrative only.\n"
+        "MANDATORY RESPONSE FORMAT AND RULES\n"
+        '{"summary":"Concise report narrative","recommendations":["Actionable recommendation grounded in retrieved guidance"]}\n'
+        "- Return exactly one JSON object with the keys shown above.\n"
+        "- Write a concise, fact-specific summary.\n"
+        "- Include actionable recommendations that connect retrieved guidance to the report's freshness or anomalies.\n"
         "- Do not change any numbers.\n"
         "- Mention whether human review remains required.\n"
         "- Call out any stale source or anomaly.\n"

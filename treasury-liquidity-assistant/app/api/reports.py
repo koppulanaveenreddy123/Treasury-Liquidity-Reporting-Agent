@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException
 from app.agent.orchestrator import Orchestrator
 from app.models.requests import GenerateReportRequest
 from app.models.review import ReviewDecisionRequest, ReviewRecord
-from app.observability.metrics import ACTIVE_ALERTS, HUMAN_REVIEWS, LAST_EVALUATION_SCORE, LAST_LIQUIDITY_RATIO, PENDING_REVIEW_REPORTS, REPORT_REQUESTS
+from app.observability.metrics import ACTIVE_ALERTS, BLOCKED_REPORTS, HUMAN_REVIEWS, LAST_EVALUATION_SCORE, LAST_LIQUIDITY_RATIO, PENDING_REVIEW_REPORTS, REPORTS_PROCESSED, REPORT_REQUESTS
 from app.services.alert_service import alert_service
 from app.services.report_repository import ReportRepository
 
@@ -62,12 +62,18 @@ async def generate_report(payload: GenerateReportRequest) -> dict:
     report = orchestrator.generate_report(
         business_date="2026-11-06",
         scenario=payload.scenario,
-        question="Treasury liquidity review",
+        question=(
+            f"Prepare a {payload.scenario} Treasury liquidity report. Use guidance for source freshness, "
+            "liquidity ratios, anomalies, and human review to produce specific recommendations."
+        ),
         human_review_status="PENDING",
     )
     repository.save_report(report)
+    REPORTS_PROCESSED.inc()
+    if report.get("report_status") == "BLOCKED":
+        BLOCKED_REPORTS.inc()
     REPORT_REQUESTS.labels(status="success").inc()
-    PENDING_REVIEW_REPORTS.set(len(repository.list_reports()))
+    PENDING_REVIEW_REPORTS.set(sum(item.get("human_review_status") == "PENDING" for item in repository.list_reports()))
     LAST_LIQUIDITY_RATIO.set(float(report["calculated_metrics"].get("simplified_liquidity_coverage_ratio", 0)))
     LAST_EVALUATION_SCORE.set(float(report["evaluation_result"].get("score_percentage", 0)))
     alerts = alert_service.evaluate_alerts(
@@ -85,7 +91,11 @@ async def generate_report(payload: GenerateReportRequest) -> dict:
         "report_id": report["report_id"],
         "scenario": payload.scenario,
         "summary": report.get("narrative", ""),
-        "recommendations": _build_recommendations(report),
+        "recommendations": report.get("recommendations") or _build_recommendations(report),
+        "retrieved_guidance": report.get("retrieved_guidance", []),
+        "rag_metadata": report.get("rag_metadata", {}),
+        "llm_provider": report.get("llm_provider", "unknown"),
+        "llm_model": report.get("llm_model", "unknown"),
         "metrics": {k: float(v) for k, v in report.get("calculated_metrics", {}).items()},
         "warnings": _build_warnings(report),
         "alerts": alerts,
@@ -156,6 +166,7 @@ async def review_report(report_id: str, payload: ReviewDecisionRequest) -> dict:
     }
     repository.save_review(review)
     HUMAN_REVIEWS.labels(decision=payload.decision).inc()
+    PENDING_REVIEW_REPORTS.set(sum(item.get("human_review_status") == "PENDING" for item in repository.list_reports()))
     alerts = alert_service.evaluate_alerts(
         report_status=report.get("report_status"),
         source_freshness=report.get("source_freshness"),

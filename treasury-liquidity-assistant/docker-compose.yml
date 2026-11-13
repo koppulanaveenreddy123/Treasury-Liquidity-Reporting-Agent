@@ -4,8 +4,12 @@ services:
   app:
     build: .
     container_name: treasury-liquidity-app
+    env_file:
+      - .env
     ports:
       - "8000:8000"
+    volumes:
+      - ./.chromadb:/app/.chromadb
     environment:
       - APP_ENV=development
       - DEBUG=true

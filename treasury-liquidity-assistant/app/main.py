@@ -14,6 +14,8 @@ from app.api.reports import router as reports_router
 from app.observability.logging_config import configure_logging
 from app.observability.metrics import setup_metrics
 from app.observability.tracing import setup_tracing
+from app.rag.ingestion import IngestionService
+from app.config import settings
 
 
 configure_logging()
@@ -24,6 +26,10 @@ logger = logging.getLogger("treasury_app")
 async def lifespan(_: FastAPI):
     setup_metrics()
     setup_tracing(service_name="treasury-liquidity-assistant", app=app)
+    ingestion = IngestionService()
+    if ingestion.vector_store.count() == 0:
+        ingestion.ingest()
+        logger.info("Treasury guidance ingested into ChromaDB", extra={"embedding_model": settings.embedding_model})
     logger.info("Application startup complete", extra={"service": "treasury-liquidity-assistant"})
     yield
     logger.info("Application shutdown complete", extra={"service": "treasury-liquidity-assistant"})

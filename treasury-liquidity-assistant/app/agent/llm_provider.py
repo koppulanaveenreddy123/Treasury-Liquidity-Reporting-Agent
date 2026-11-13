@@ -28,5 +28,6 @@ class OpenAICompatibleLLMProvider(LLMProvider):
         response = self.client.responses.create(
             model=self.model,
             input=prompt,
+            text={"format": {"type": "json_object"}},
         )
         return response.output_text

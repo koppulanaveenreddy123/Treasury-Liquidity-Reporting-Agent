@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.observability.metrics import BLOCKED_REPORTS, PENDING_REVIEW_REPORTS, REPORTS_PROCESSED
 
 
 client = TestClient(app)
@@ -67,3 +68,32 @@ def test_stale_scenario_is_blocked_and_rejects_approval() -> None:
     )
     assert review_response.status_code == 409
     assert "cannot be approved" in review_response.json()["detail"].lower()
+
+
+def test_report_metrics_track_processed_blocked_and_pending_reviews() -> None:
+    processed_before = REPORTS_PROCESSED._value.get()
+    blocked_before = BLOCKED_REPORTS._value.get()
+    pending_before = PENDING_REVIEW_REPORTS._value.get()
+
+    healthy_response = client.post(
+        "/api/v1/reports/generate",
+        json={"run_id": "metrics-healthy", "scenario": "healthy", "human_approved": False},
+    )
+    blocked_response = client.post(
+        "/api/v1/reports/generate",
+        json={"run_id": "metrics-blocked", "scenario": "stale", "human_approved": False},
+    )
+
+    assert healthy_response.status_code == 200
+    assert blocked_response.status_code == 200
+    assert REPORTS_PROCESSED._value.get() == processed_before + 2
+    assert BLOCKED_REPORTS._value.get() == blocked_before + 1
+    assert PENDING_REVIEW_REPORTS._value.get() == pending_before + 2
+
+    review_response = client.post(
+        f"/api/v1/reports/{blocked_response.json()['report_id']}/review",
+        json={"decision": "REJECTED", "reviewer": "analyst"},
+    )
+
+    assert review_response.status_code == 200
+    assert PENDING_REVIEW_REPORTS._value.get() == pending_before + 1
